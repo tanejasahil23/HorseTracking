@@ -16,12 +16,6 @@ public class CommandService {
 
 	private String errorMessage;
 
-	public CommandService() {
-	}
-
-	public void execute(String[] command) {
-	}
-
 	public String validateCommand(String commandLine) {
 
 		String[] commandComponents = Arrays.stream(commandLine.split(" ")).map(String::trim).toArray(String[]::new);
@@ -51,10 +45,6 @@ public class CommandService {
 			currentCommand = "invalid";
 			return currentCommand;
 		}
-	}
-
-	public String getCurrentCommand() {
-		return currentCommand;
 	}
 
 	public int getBetHorseNumber() {

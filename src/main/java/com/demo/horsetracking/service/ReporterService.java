@@ -109,8 +109,7 @@ public class ReporterService {
 	}
 
 	public void postCommand() {
-		printInventory();
-		printHorses();
+		startup();
 	}
 
 }

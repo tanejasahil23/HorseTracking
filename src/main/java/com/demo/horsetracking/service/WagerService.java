@@ -1,67 +1,63 @@
 package com.demo.horsetracking.service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.demo.horsetracking.model.Inventory;
 import com.demo.horsetracking.model.Wager;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 public class WagerService {
 
-  final int ONE = 1;
-  final int FIVE = 5;
-  final int TEN = 10;
-  final int TWENTY = 20;
-  final int HUNDRED = 100;
+	@Autowired
+	private InventoryService inventoryService;
 
-  @Autowired
-  private InventoryService inventoryService;
+	public int calculateAmountWon(int wager, int odds) {
+		return wager * odds;
+	}
 
-  public int calculateAmountWon(int wager, int odds) {
-    return wager * odds;
-  }
+	public List<Wager> dispenseWinnings(int winning) {
+		List<Wager> list = new ArrayList<>();
+		Map<Integer, Wager> hm = new HashMap<>();
+		List<Inventory> inventories = inventoryService.getInventories();
 
-  public List<Wager> dispenseWinnings(int winnings) {
+		// Sort inventories by denomination in descending order
+		inventories.sort(Comparator.comparingInt(Inventory::getDenomination).reversed());
 
-    List<Wager> list = new ArrayList<>();
-    Wager wager;
-    boolean wagerAdded = false;
+		for (Inventory inventory : inventories) {
+			int denomination = inventory.getDenomination();
+			int billCount = inventory.getBillCount();
 
-    List<Integer> denoms = inventoryService.getInventories()
-                              .stream()
-                              .map(Inventory::getDenomination)
-                              .collect(Collectors.toList());
-    Collections.reverse(denoms);
+			if (winning >= denomination) {
+				int maxBillsToUse = Math.min(billCount, winning / denomination);
+				hm.put(denomination, new Wager(denomination, maxBillsToUse));
+				winning -= denomination * maxBillsToUse;
+			}
+		}
 
-    for (Integer denomination : denoms) {
-      int bill = denomination;
-      wagerAdded = false;
-      for (int cnt = inventoryService.getInventory(bill).getBillCount(); cnt >0; cnt--) {
-        int totalAmountOfBills = bill * cnt;
-        if (winnings >= totalAmountOfBills) {
-          wager = new Wager(bill,cnt);
-          list.add(wager);
-          wagerAdded = true;
-          winnings -= totalAmountOfBills;
-          break;
-        }
-      }
-      if (!wagerAdded) {
-        wager = new Wager(bill,0);
-        list.add(wager);
-      }
-    }
+		if (inventories.size() != hm.size()) {
+			inventories.stream().forEach(invenory -> {
 
-    list.forEach(k-> {
-      inventoryService.decrementInventory(k.getDenomination(), k.getBillCount());
-    });
-    return list;
-  }
+				if (!hm.containsKey(invenory.getDenomination())) {
+					Wager wager = new Wager(invenory.getDenomination(), 0);
+					hm.put(invenory.getDenomination(), wager);
+				}
+			});
+
+		}
+		list = hm.values().stream().collect(Collectors.toList());
+		list.forEach(k -> {
+			inventoryService.decrementInventory(k.getDenomination(), k.getBillCount());
+		});
+
+		return list;
+	}
 
 }

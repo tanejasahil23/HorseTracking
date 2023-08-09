@@ -1,0 +1,6 @@
+/target/
+/.project
+/.settings/
+mb-entities/common-entity/target/clover/cloverMerge.db
+*.ser
+/.classpath
